@@ -1153,9 +1153,7 @@ function tileAt(e){
     destroyGhost(); hl.visible=false; hlInvalid.visible=false;
     ctrl.enabled=true; drag=null; dragDef=null;
   });
-  el.addEventListener('touchstart',()=>{ctrl.enabled=false;},{passive:true});
-  el.addEventListener('touchend',()=>{ctrl.enabled=true;},{passive:true});
-  el.addEventListener('touchcancel',()=>{ctrl.enabled=true;},{passive:true});
+  // ctrl.enabled wird im touch-dragstart Handler unten gesetzt
 });
 
 document.addEventListener('dragover',e=>{
@@ -1786,6 +1784,7 @@ document.addEventListener('touchend',e=>{
   if(drag===null)return;
   hl.visible=false;hlInvalid.visible=false;destroyGhost();ctrl.enabled=true;
   const touch=e.changedTouches[0];
+  if(touch){_lastTX=touch.clientX;_lastTY=touch.clientY;}
   const tx=touch?touch.clientX:_lastTX;
   const ty=touch?touch.clientY:_lastTY;
   const fk={clientX:tx,clientY:ty};
@@ -1815,7 +1814,7 @@ document.addEventListener('touchend',e=>{
     // Remove dragging class on touchend
     const onEnd=()=>{el.classList.remove('dragging');el.removeEventListener('touchend',onEnd);};
     el.addEventListener('touchend',onEnd,{once:true});
-  },{passive:true});
+  },{passive:false});
 });
 
 </script>
