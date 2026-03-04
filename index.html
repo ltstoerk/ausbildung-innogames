@@ -2,11 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Forge of Career · Lucas Störk</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#1a2510; font-family:'Georgia',serif; overflow:hidden; color:#f0e6c8; user-select:none; }
+body { background:#1a2510; font-family:'Georgia',serif; overflow:hidden; color:#f0e6c8; user-select:none; overscroll-behavior:none; }
 
 #loading {
   position:fixed; inset:0; z-index:9999;
@@ -70,7 +70,7 @@ canvas { display:block; }
 .qc-prog  { font-size:.68rem; color:#4a9a6a; margin-top:5px; font-weight:bold; }
 
 #tray {
-  position:absolute; bottom:0; left:0; right:0; padding:12px 18px 16px;
+  position:absolute; bottom:0; left:0; right:0; padding:12px 18px calc(16px + env(safe-area-inset-bottom));
   background:linear-gradient(0deg,rgba(8,5,2,.97) 0%,transparent 100%);
   display:flex; gap:10px; align-items:flex-end; justify-content:center; flex-wrap:wrap;
   pointer-events:auto;
@@ -456,10 +456,8 @@ if("ontouchstart" in document)new DragDropTouch();
   </div>
 
   <div id="help">
-    <span class="hk">Drag</span> Karte neben den Weg 🛤️ &nbsp;
-    <span class="hk">Klick</span> Gebäude öffnen<br>
-    <span class="hk">Scroll</span> Zoom &nbsp;
-    <span class="hk">Rechtsklick+Drag</span> Drehen
+    <span id="help-desktop"><span class="hk">Drag</span> Karte neben den Weg 🛤️ &nbsp;<span class="hk">Klick</span> Gebäude öffnen<br><span class="hk">Scroll</span> Zoom &nbsp;<span class="hk">Rechtsklick+Drag</span> Drehen</span>
+    <span id="help-mobile" style="display:none"><span class="hk">Halten &amp; Ziehen</span> Karte auf Feld 🛤️<br><span class="hk">Tippen</span> Gebäude öffnen &nbsp;<span class="hk">2 Finger</span> Zoom</span>
   </div>
 </div>
 
@@ -478,6 +476,23 @@ if("ontouchstart" in document)new DragDropTouch();
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
 </script>
 <script type="module">
+const isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+if(isMobile){
+  const hm=document.getElementById('help-mobile');
+  const hd=document.getElementById('help-desktop');
+  if(hm)hm.style.display='inline';
+  if(hd)hd.style.display='none';
+}
+
+// ── Mobile detection ──
+const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if(isMobile){
+  const hm=document.getElementById('help-mobile');
+  const hd=document.getElementById('help-desktop');
+  if(hm) hm.style.display='inline';
+  if(hd) hd.style.display='none';
+}
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -613,7 +628,7 @@ const DECO = [
 const canvas=document.getElementById('c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
+renderer.setSize(window.visualViewport?Math.round(window.visualViewport.width):innerWidth, window.visualViewport?Math.round(window.visualViewport.height):innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -1740,13 +1755,76 @@ let charTime = 0;
 
 
 // ── Resize ────────────────────────────────────────────────────────────────────
-window.addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
-  const a = innerWidth / innerHeight;
-  cam.left = -FS*a/2; cam.right = FS*a/2;
-  cam.top  =  FS/2;   cam.bottom = -FS/2;
+function onResize(){
+  const W=window.visualViewport?Math.round(window.visualViewport.width):innerWidth;
+  const H=window.visualViewport?Math.round(window.visualViewport.height):innerHeight;
+  renderer.setSize(W,H);
+  const a=W/H;
+  cam.left=-FS*a/2; cam.right=FS*a/2;
+  cam.top=FS/2; cam.bottom=-FS/2;
   cam.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+if(window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+
+// ── Touch building placement ──────────────────────────────────────────────
+let _lastTX=0,_lastTY=0;
+document.addEventListener('touchmove',e=>{
+  if(drag===null)return;
+  if(e.touches.length>0){_lastTX=e.touches[0].clientX;_lastTY=e.touches[0].clientY;}
+  // update ghost + highlight while dragging
+  const fk={clientX:_lastTX,clientY:_lastTY};
+  const cr=canvas.getBoundingClientRect();
+  if(dragGhost){
+    const mv2=new THREE.Vector2(((_lastTX-cr.left)/cr.width)*2-1,-((_lastTY-cr.top)/cr.height)*2+1);
+    rc.setFromCamera(mv2,cam);
+    const pl=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+    const pt=new THREE.Vector3();
+    if(rc.ray.intersectPlane(pl,pt))dragGhost.position.set(pt.x,0.2,pt.z);
+  }
+  const t=tileAt(fk);
+  if(!t){hl.visible=false;hlInvalid.visible=false;return;}
+  const valid=!t.userData.occ&&t.userData.adj&&!t.userData.onPath;
+  if(valid){hl.position.set(t.position.x,0.19,t.position.z);hl.visible=true;hlInvalid.visible=false;if(dragGhost)setGhostColor(false);}
+  else{hl.visible=false;hlInvalid.position.set(t.position.x,0.21,t.position.z);hlInvalid.visible=true;hlInvalid.material.opacity=0.6;if(dragGhost)setGhostColor(true);}
+},{passive:true});
+
+document.addEventListener('touchend',e=>{
+  if(drag===null)return;
+  hl.visible=false;hlInvalid.visible=false;destroyGhost();ctrl.enabled=true;
+  const touch=e.changedTouches[0];
+  const tx=touch?touch.clientX:_lastTX;
+  const ty=touch?touch.clientY:_lastTY;
+  const fk={clientX:tx,clientY:ty};
+  const t=tileAt(fk);
+  if(!t){notify('❌ Kein Feld getroffen!');drag=null;dragDef=null;return;}
+  if(t.userData.occ){notify('❌ Feld bereits belegt!');flashInvalidTile(t);drag=null;dragDef=null;return;}
+  if(t.userData.onPath){notify('🛤️ Nicht auf dem Weg!');flashInvalidTile(t);drag=null;dragDef=null;return;}
+  if(!t.userData.adj){notify('🛤️ Nur neben dem Weg!');flashInvalidTile(t);drag=null;dragDef=null;return;}
+  dropBuilding(drag,t);
+  drag=null;dragDef=null;
 });
+
+// Touch dragstart on cards
+['card0','card1','card2','card3','card4'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{
+    const qi=parseInt(el.dataset.quest);
+    if(placed[qi]||doneq[qi])return;
+    if(qi>0&&!doneq[qi-1]){notify('🔒 Erst vorherige Quest abschließen!');return;}
+    e.stopPropagation();
+    drag=qi;dragDef=DEFS[qi];
+    el.classList.add('dragging');
+    ctrl.enabled=false;
+    const g=cache[dragDef.asset];
+    if(g){const m=g.scene.clone();m.scale.setScalar(dragDef.scale||1.0);m.rotation.y=dragDef.rotY||0;createGhost(m);}
+    if(e.touches.length>0){_lastTX=e.touches[0].clientX;_lastTY=e.touches[0].clientY;}
+    // Remove dragging class on touchend
+    const onEnd=()=>{el.classList.remove('dragging');el.removeEventListener('touchend',onEnd);};
+    el.addEventListener('touchend',onEnd,{once:true});
+  },{passive:true});
+});
+
 </script>
 </body>
 </html>
