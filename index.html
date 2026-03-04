@@ -67,6 +67,7 @@ canvas { display:block; }
   display:flex; flex-direction:column; gap:8px;
   pointer-events:auto; max-height:calc(100vh - 160px); overflow-y:auto;
   touch-action:pan-y; -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
 #panel::-webkit-scrollbar{width:3px}
 #panel::-webkit-scrollbar-thumb{background:#d4a84328}
@@ -76,8 +77,9 @@ canvas { display:block; }
   border-left:3px solid rgba(212,168,67,.45); border-radius:6px;
   padding:10px 12px; backdrop-filter:blur(8px); transition:all .25s;
 }
-.qcard .qc-hint, .qcard .qc-prog { display:none; }
-.qcard.active .qc-hint, .qcard.active .qc-prog { display:block; }
+#qc-controls { background:rgba(8,5,2,.45); border-color:rgba(212,168,67,.12); }
+.qcard.active { background:rgba(8,5,2,.72); }
+/* hint/prog always visible; locked cards dimmed via opacity */
 .qcard.done   { border-left-color:#4a8; opacity:.55; cursor:pointer; }
 .qcard.done .qc-desc, .qcard.done .qc-hint, .qcard.done .qc-prog { display:none; }
 .qcard.done .qc-step { margin-bottom:0; }
@@ -85,7 +87,6 @@ canvas { display:block; }
 .qcard.done.expanded .qc-desc, .qcard.done.expanded .qc-hint, .qcard.done.expanded .qc-prog { display:block; }
 .qcard.active { border-left-color:#d4a843; }
 .qcard.locked { border-left-color:#2a2a2a; opacity:.4; }
-.qcard.locked .qc-hint, .qcard.locked .qc-prog { display:none; }
 .qc-step  { font-size:.58rem; color:#705020; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
 .qc-title { font-size:.9rem; color:#d4a843; margin-bottom:4px; }
 .qc-desc  { font-size:.7rem; color:#806040; line-height:1.5; }
