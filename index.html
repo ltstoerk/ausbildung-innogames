@@ -43,7 +43,7 @@ canvas { display:block; }
 #topbar {
   position:absolute; top:0; left:0; right:0; padding:8px 14px 6px;
   display:flex; flex-direction:column; gap:4px;
-  background:linear-gradient(180deg,rgba(8,5,2,.97) 0%,rgba(8,5,2,.7) 80%,transparent 100%);
+  background:linear-gradient(180deg,rgba(6,4,2,.98) 0%,rgba(6,4,2,.88) 55%,rgba(6,4,2,.4) 80%,transparent 100%);
   pointer-events:auto;
 }
 .tb-row1 { display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -75,7 +75,11 @@ canvas { display:block; }
   border-left:3px solid rgba(212,168,67,.45); border-radius:6px;
   padding:10px 12px; backdrop-filter:blur(8px); transition:all .25s;
 }
-.qcard.done   { border-left-color:#4a8; opacity:.6; }
+.qcard.done   { border-left-color:#4a8; opacity:.55; cursor:pointer; }
+.qcard.done .qc-desc, .qcard.done .qc-hint, .qcard.done .qc-prog { display:none; }
+.qcard.done .qc-step { margin-bottom:0; }
+.qcard.done:hover { opacity:.75; }
+.qcard.done.expanded .qc-desc, .qcard.done.expanded .qc-hint, .qcard.done.expanded .qc-prog { display:block; }
 .qcard.active { border-left-color:#d4a843; box-shadow:0 0 16px rgba(212,168,67,.1); }
 .qcard.locked { border-left-color:#2a2a2a; opacity:.4; }
 .qc-step  { font-size:.58rem; color:#705020; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
@@ -416,10 +420,9 @@ if("ontouchstart" in document)new DragDropTouch();
   </div>
 
   <div id="panel">
-    <div class="qcard" id="qc-controls" style="border-left-color:rgba(212,168,67,.55)">
-      <div class="qc-step" style="color:#a08040">STEUERUNG</div>
-      <div class="qc-title" style="font-size:.82rem">🎮 Controls</div>
-      <div class="qc-desc" style="font-size:.64rem;line-height:1.9">
+    <div class="qcard" id="qc-controls" style="border-left-color:rgba(212,168,67,.3);padding:7px 12px">
+      <div class="qc-step" style="color:#806030;letter-spacing:1px">STEUERUNG</div>
+      <div class="qc-desc" style="font-size:.63rem;line-height:1.85;margin-top:3px">
         <span id="cph-desktop">
           <b>Drag</b> Karte neben den Weg 🛤️<br>
           <b>Klick</b> Gebäude öffnen<br>
@@ -428,8 +431,7 @@ if("ontouchstart" in document)new DragDropTouch();
         <span id="cph-mobile" style="display:none">
           <b>Halten &amp; Ziehen</b> Karte auf Feld 🛤️<br>
           <b>Tippen</b> Gebäude öffnen<br>
-          <b>2 Finger</b> Zoom &amp; Drehen<br>
-          <b>1 Finger</b> Ansicht verschieben
+          <b>2 Finger</b> Zoom &amp; Drehen &nbsp;·&nbsp; <b>1 Finger</b> Verschieben
         </span>
       </div>
     </div>
@@ -1300,7 +1302,7 @@ function tileAt(e){
 
 ['card0','card1','card2','card3','card4'].forEach(id=>{
   const el=document.getElementById(id);
-  el.setAttribute('draggable','true');
+  // draggable set dynamically by updateCardStates()
   const qi=parseInt(el.dataset.quest);
   el.addEventListener('dragstart',e=>{
     if(placed[qi]||done_q[qi]){e.preventDefault();return;}
@@ -1360,12 +1362,24 @@ canvas.addEventListener('drop',e=>{
   dropBuilding(drag,t);
 });
 
+// Toggle collapsed done quests on click
+document.getElementById('panel').addEventListener('click',e=>{
+  const card=e.target.closest('.qcard.done');
+  if(card) card.classList.toggle('expanded');
+});
+
 function updateCardStates(){
   DEFS.forEach((_,i)=>{
     const el=document.getElementById('card'+i);
     if(!el)return;
-    const locked=i>0&&!done_q[i-1]&&!placed[i]&&!done_q[i];
-    el.classList.toggle('locked-card',locked);
+    const isPlaced=placed[i];
+    const isDone=done_q[i];
+    const isLocked=i>0&&!done_q[i-1]&&!isPlaced&&!isDone;
+    const canDrag=!isPlaced&&!isDone&&!isLocked;
+    el.classList.toggle('locked-card',isLocked);
+    // draggable only when actually usable
+    if(canDrag) el.setAttribute('draggable','true');
+    else el.removeAttribute('draggable');
   });
 }
 
