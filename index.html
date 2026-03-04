@@ -209,6 +209,18 @@ canvas { display:block; }
   filter:drop-shadow(0 6px 20px rgba(0,0,0,.72)) drop-shadow(0 0 10px rgba(212,168,67,.35));
 }
 </style>
+<script>
+(function(){"use strict";function DataTransfer2(){this.dropEffect="move";this.effectAllowed="all";this.files=[];this.items=[];this.types=[];this._data={};}DataTransfer2.prototype={setData:function(t,v){this._data[t]=v;if(this.types.indexOf(t)<0)this.types.push(t);},getData:function(t){return this._data[t]||"";},clearData:function(t){if(t)delete this._data[t];else this._data={};},setDragImage:function(){}};
+function DragDropTouch(){this._img=null;this._dragSource=null;this._lastTouch=null;this._lastTarget=null;this._ptDown=null;this._isDragging=false;this._dataTransfer=new DataTransfer2();document.addEventListener("touchstart",this._onTS.bind(this),{passive:false});document.addEventListener("touchmove",this._onTM.bind(this),{passive:false});document.addEventListener("touchend",this._onTE.bind(this));document.addEventListener("touchcancel",this._onTE.bind(this));}
+DragDropTouch.prototype={_onTS:function(e){var src=e.target,_this=this;if(e.touches.length>1)return;this._ptDown={x:e.touches[0].clientX,y:e.touches[0].clientY};this._lastTouch=e;setTimeout(function(){if(_this._ptDown&&src&&src.draggable&&!_this._isDragging){_this._isDragging=true;_this._dragSource=src;_this._dataTransfer=new DataTransfer2();src.dispatchEvent(_this._mkEvt("dragstart",e,src));_this._mkImg(e);}},180);},
+_onTM:function(e){if(!this._isDragging)return;e.preventDefault();var t=e.touches[0];this._lastTouch=e;if(this._img){this._img.style.left=(t.clientX-this._img._ox)+"px";this._img.style.top=(t.clientY-this._img._oy)+"px";}var tgt=this._getTgt(t);if(tgt!==this._lastTarget){if(this._lastTarget)this._lastTarget.dispatchEvent(this._mkEvt("dragleave",e,this._dragSource));if(tgt)tgt.dispatchEvent(this._mkEvt("dragenter",e,this._dragSource));this._lastTarget=tgt;}if(tgt)tgt.dispatchEvent(this._mkEvt("dragover",e,this._dragSource));},
+_onTE:function(e){if(!this._isDragging)return;var lt=this._lastTouch,t=lt&&lt.touches&&lt.touches[0]?lt.touches[0]:e.changedTouches[0];var tgt=this._getTgt(t);if(tgt)tgt.dispatchEvent(this._mkEvt("drop",e,this._dragSource));if(this._dragSource)this._dragSource.dispatchEvent(this._mkEvt("dragend",e,this._dragSource));if(this._img&&this._img.parentElement)this._img.parentElement.removeChild(this._img);this._img=null;this._isDragging=false;this._dragSource=null;this._lastTarget=null;this._ptDown=null;},
+_mkEvt:function(type,src,dragSrc){var e=document.createEvent("Event");e.initEvent(type,true,true);e.dataTransfer=this._dataTransfer;var t=src.touches&&src.touches[0]?src.touches[0]:src.changedTouches&&src.changedTouches[0];if(t){e.clientX=t.clientX;e.clientY=t.clientY;}return e;},
+_getTgt:function(touch){var el=document.elementFromPoint(touch.clientX,touch.clientY);while(el&&!el.getAttribute("data-quest")&&el.parentElement&&el!==document.body)el=el.parentElement;return el;},
+_mkImg:function(e){var src=this._dragSource,img=src.cloneNode(true);img.style.cssText="position:fixed;pointer-events:none;z-index:999999;opacity:0.55;width:"+src.offsetWidth+"px;height:"+src.offsetHeight+"px;";var ox=src.offsetWidth/2,oy=src.offsetHeight/2;img._ox=ox;img._oy=oy;img.style.left=(e.touches[0].clientX-ox)+"px";img.style.top=(e.touches[0].clientY-oy)+"px";document.body.appendChild(img);this._img=img;}};
+if("ontouchstart" in document)new DragDropTouch();
+})();
+</script>
 </head>
 <body>
 
@@ -1002,7 +1014,7 @@ function tileAt(e){
     if(g){const m=g.scene.clone();m.scale.setScalar(dragDef.scale||1.0);m.rotation.y=dragDef.rotY||0;createGhost(m);}
     e.dataTransfer.effectAllowed='move';
     const blank=document.createElement('canvas');blank.width=blank.height=1;
-    e.dataTransfer.setDragImage(blank,0,0);
+    if(e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(blank,0,0);
     ctrl.enabled=false;
   });
   el.addEventListener('dragend',()=>{
@@ -1010,6 +1022,9 @@ function tileAt(e){
     destroyGhost(); hl.visible=false; hlInvalid.visible=false;
     ctrl.enabled=true; drag=null; dragDef=null;
   });
+  el.addEventListener('touchstart',()=>{ctrl.enabled=false;},{passive:true});
+  el.addEventListener('touchend',()=>{ctrl.enabled=true;},{passive:true});
+  el.addEventListener('touchcancel',()=>{ctrl.enabled=true;},{passive:true});
 });
 
 document.addEventListener('dragover',e=>{
