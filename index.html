@@ -208,6 +208,129 @@ canvas { display:block; }
   display:block;
   filter:drop-shadow(0 6px 20px rgba(0,0,0,.72)) drop-shadow(0 0 10px rgba(212,168,67,.35));
 }
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE — max-width: 600px
+   ═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* ── Topbar ── */
+  #topbar {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+  .tb-name { font-size: .82rem; letter-spacing: 1px; }
+  .tb-era  { font-size: .6rem; padding: 2px 7px; }
+  .tb-res  { gap: 4px; }
+  .ri      { font-size: .62rem; padding: 2px 7px; }
+  .tb-prog { font-size: .68rem; }
+
+  /* ── Quest panel — hide on mobile to save space, show as collapsed ── */
+  #panel {
+    right: 6px;
+    top: 52px;
+    width: min(200px, 46vw);
+    max-height: calc(100vh - 200px);
+    gap: 5px;
+  }
+  .qcard { padding: 7px 9px; }
+  .qc-title { font-size: .78rem; }
+  .qc-desc  { font-size: .62rem; }
+  .qc-hint  { font-size: .58rem; }
+  .qc-step  { font-size: .52rem; }
+  .qc-prog  { font-size: .6rem; }
+
+  /* ── Card tray — smaller cards, horizontal scroll ── */
+  #tray {
+    padding: 8px 8px 12px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card {
+    width: 72px;
+    flex-shrink: 0;
+    padding: 4px 5px 6px;
+    touch-action: none;
+  }
+  .card-canvas { width: 62px; height: 50px; }
+  .cn { font-size: .58rem; }
+  .cs { font-size: .5rem; }
+
+  /* ── Building menu ── */
+  #bmenu {
+    bottom: 100px;
+    width: min(98vw, 400px);
+    padding: 12px 12px;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+  .bm-desc  { font-size: .68rem; }
+  .bm-slots { gap: 6px; }
+  .slot     { min-width: 100px; padding: 7px 8px; }
+  .si       { font-size: 1.2rem; }
+  .sn       { font-size: .65rem; }
+  .sc       { font-size: .56rem; }
+
+  /* ── Dialog ── */
+  #dlg {
+    bottom: 100px;
+    width: min(96vw, 400px);
+    padding: 14px 14px;
+  }
+  .dt { font-size: .9rem; }
+  .db { font-size: .72rem; }
+
+  /* ── Notification ── */
+  #notif {
+    top: 52px;
+    font-size: .68rem;
+    padding: 5px 14px;
+    max-width: 90vw;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* ── Story toast ── */
+  #story-toast {
+    padding: 16px 18px;
+    width: min(92vw, 400px);
+  }
+  .st-title { font-size: .9rem; }
+  .st-body  { font-size: .7rem; }
+
+  /* ── Completion screen ── */
+  .cb {
+    padding: 22px 20px;
+    max-width: 92vw;
+  }
+  .ci2 { font-size: 2.8rem; }
+  .ct  { font-size: 1.2rem; letter-spacing: 2px; }
+  .cq  { font-size: .76rem; }
+  .cbody { font-size: .72rem; }
+  .cvb { padding: 9px 16px; font-size: .74rem; margin-right: 4px; }
+  .clb { padding: 9px 12px; font-size: .7rem; }
+
+  /* ── Help overlay — hide on mobile (touch users don't need keyboard hints) ── */
+  #help { display: none; }
+
+  /* ── Notif & bmenu/dlg position tweak when tray is at bottom ── */
+  #bmenu  { bottom: 105px; }
+  #dlg    { bottom: 105px; }
+}
+
+/* ── Landscape mobile: reduce heights further ── */
+@media (max-width: 900px) and (max-height: 450px) {
+  #panel { display: none; }
+  #tray  { padding: 4px 8px 6px; }
+  .card  { width: 58px; }
+  .card-canvas { width: 48px; height: 38px; }
+  #bmenu { bottom: 60px; max-height: 80vh; }
+  #dlg   { bottom: 60px; }
+}
+
 </style>
 <script>
 (function(){"use strict";function DataTransfer2(){this.dropEffect="move";this.effectAllowed="all";this.files=[];this.items=[];this.types=[];this._data={};}DataTransfer2.prototype={setData:function(t,v){this._data[t]=v;if(this.types.indexOf(t)<0)this.types.push(t);},getData:function(t){return this._data[t]||"";},clearData:function(t){if(t)delete this._data[t];else this._data={};},setDragImage:function(){}};
