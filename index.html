@@ -770,6 +770,23 @@ function setGhostColor(invalid){
 }
 
 // ── Load all assets ───────────────────────────────────────────────────────────
+// Encode filename before passing to the loader.
+const loadOne = (name) => new Promise(resolve => {
+  if (cache[name] !== undefined) { resolve(cache[name]); return; }
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (!settled) { settled = true; cache[name] = null; resolve(null); }
+  }, 12000);
+  // FIX: encode spaces and special characters
+  const encodedName = name.split('/').map(encodeURIComponent).join('/');
+  glbl.load(BASE + encodedName, gltf => {
+    if (settled) return; settled = true; clearTimeout(timer);
+    gltf.scene.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+    cache[name] = gltf; resolve(gltf);
+  }, undefined, () => {
+    if (settled) return; settled = true; clearTimeout(timer); cache[name] = null; resolve(null);
+  });
+}); 
 // Essential assets (buildings + character) load first → reveal immediately.
 // Deco assets load in background after reveal – never blocks the game.
 const essentialNames=[...new Set([...DEFS.map(d=>d.asset),'Animated Base Character.glb'])];
