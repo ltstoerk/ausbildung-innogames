@@ -1153,7 +1153,9 @@ function tileAt(e){
     destroyGhost(); hl.visible=false; hlInvalid.visible=false;
     ctrl.enabled=true; drag=null; dragDef=null;
   });
-  // ctrl.enabled wird im touch-dragstart Handler unten gesetzt
+  el.addEventListener('touchstart',()=>{ctrl.enabled=false;},{passive:true});
+  el.addEventListener('touchend',()=>{ctrl.enabled=true;},{passive:true});
+  el.addEventListener('touchcancel',()=>{ctrl.enabled=true;},{passive:true});
 });
 
 document.addEventListener('dragover',e=>{
@@ -1758,12 +1760,13 @@ function onResize(){
 window.addEventListener('resize', onResize);
 if(window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 
-// ── Touch building placement ──────────────────────────────────────────────
+// ── Touch building placement ────────────────────────────────────────────────
 let _lastTX=0,_lastTY=0;
+
 document.addEventListener('touchmove',e=>{
   if(drag===null)return;
+  e.preventDefault();
   if(e.touches.length>0){_lastTX=e.touches[0].clientX;_lastTY=e.touches[0].clientY;}
-  // update ghost + highlight while dragging
   const fk={clientX:_lastTX,clientY:_lastTY};
   const cr=canvas.getBoundingClientRect();
   if(dragGhost){
@@ -1778,7 +1781,7 @@ document.addEventListener('touchmove',e=>{
   const valid=!t.userData.occ&&t.userData.adj&&!t.userData.onPath;
   if(valid){hl.position.set(t.position.x,0.19,t.position.z);hl.visible=true;hlInvalid.visible=false;if(dragGhost)setGhostColor(false);}
   else{hl.visible=false;hlInvalid.position.set(t.position.x,0.21,t.position.z);hlInvalid.visible=true;hlInvalid.material.opacity=0.6;if(dragGhost)setGhostColor(true);}
-},{passive:true});
+},{passive:false});
 
 document.addEventListener('touchend',e=>{
   if(drag===null)return;
@@ -1797,13 +1800,35 @@ document.addEventListener('touchend',e=>{
   drag=null;dragDef=null;
 });
 
+// Gebäude per Tap öffnen (Mobile)
+canvas.addEventListener('touchend',e=>{
+  if(drag!==null)return;
+  if(e.changedTouches.length===0)return;
+  const touch=e.changedTouches[0];
+  const r=canvas.getBoundingClientRect();
+  spriteMv.x=((touch.clientX-r.left)/r.width)*2-1;
+  spriteMv.y=-((touch.clientY-r.top)/r.height)*2+1;
+  rc.setFromCamera(spriteMv,cam);
+  const spriteHits=rc.intersectObjects(Object.values(floatBubbles),false);
+  if(spriteHits.length>0){const sp=spriteHits[0].object;if(sp.userData.qi!=null)openBM(sp.userData.qi);return;}
+  const meshHits=rc.intersectObjects(scene.children,true);
+  for(const h of meshHits){
+    let o=h.object;
+    while(o&&o!==scene){
+      const qi=bldgObjs.indexOf(o);
+      if(qi>=0){openBM(qi);return;}
+      o=o.parent;
+    }
+  }
+},{passive:true});
+
 // Touch dragstart on cards
 ['card0','card1','card2','card3','card4'].forEach(id=>{
   const el=document.getElementById(id);
   el.addEventListener('touchstart',e=>{
     const qi=parseInt(el.dataset.quest);
-    if(placed[qi]||doneq[qi])return;
-    if(qi>0&&!doneq[qi-1]){notify('🔒 Erst vorherige Quest abschließen!');return;}
+    if(placed[qi]||done_q[qi])return;
+    if(qi>0&&!done_q[qi-1]){notify('🔒 Erst vorherige Quest abschließen!');return;}
     e.preventDefault();
     e.stopPropagation();
     drag=qi;dragDef=DEFS[qi];
@@ -1812,7 +1837,6 @@ document.addEventListener('touchend',e=>{
     const g=cache[dragDef.asset];
     if(g){const m=g.scene.clone();m.scale.setScalar(dragDef.scale||1.0);m.rotation.y=dragDef.rotY||0;createGhost(m);}
     if(e.touches.length>0){_lastTX=e.touches[0].clientX;_lastTY=e.touches[0].clientY;}
-    // Remove dragging class on touchend
     const onEnd=()=>{el.classList.remove('dragging');el.removeEventListener('touchend',onEnd);};
     el.addEventListener('touchend',onEnd,{once:true});
   },{passive:false});
