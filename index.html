@@ -972,14 +972,6 @@ function updateQuestProgress(qi){
   } else {el.textContent=current+'/'+needV+' '+def.needLabel+' – Produzieren';}
 }
 
-// ── Notifications ──────────────────────────────────────────────────────────────
-let nT;
-function notify(m){
-  const el=document.getElementById('notif');
-  el.textContent=m; el.classList.add('show');
-  clearTimeout(nT); nT=setTimeout(()=>el.classList.remove('show'),3200);
-}
-
 // ── Drag & Drop ───────────────────────────────────────────────────────────────
 let drag=null,dragDef=null;
 const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
