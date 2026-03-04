@@ -26,7 +26,12 @@ body { background:#1a2510; font-family:'Georgia',serif; overflow:hidden; color:#
   text-align:center;
   width:100%;
 }
-.ld-sub   { font-size:.85rem; color:#806030; letter-spacing:3px; margin-bottom:2rem; text-align:center; }
+.ld-sub   { font-size:.85rem; color:#d4a843; letter-spacing:3px; margin-bottom:.4rem; text-align:center; }
+.ld-sub2  { font-size:.75rem; color:#806030; letter-spacing:2px; margin-bottom:1.6rem; text-align:center; }
+.ld-start { margin-top:1.4rem; background:linear-gradient(135deg,#d4a843,#b88828); border:none; color:#060402;
+  font-size:.9rem; font-weight:bold; padding:11px 32px; border-radius:7px; cursor:pointer;
+  font-family:Georgia,serif; letter-spacing:2px; transition:all .2s; }
+.ld-start:hover { background:linear-gradient(135deg,#f0c060,#d4a843); transform:translateY(-2px); }
 .ld-bar   { width:min(320px,80vw); height:5px; background:#1a1008; border-radius:3px; overflow:hidden; border:1px solid #2a1a08; }
 .ld-fill  { height:100%; background:linear-gradient(90deg,#c09030,#f0c060); border-radius:3px; width:0; transition:width .2s; }
 .ld-tip   { margin-top:1.2rem; color:#604820; font-size:.75rem; font-style:italic; max-width:min(400px,85vw); text-align:center; }
@@ -36,11 +41,21 @@ canvas { display:block; }
 #ui { position:fixed; inset:0; pointer-events:none; z-index:100; }
 
 #topbar {
-  position:absolute; top:0; left:0; right:0; padding:13px 20px;
-  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;
-  background:linear-gradient(180deg,rgba(8,5,2,.95) 0%,transparent 100%);
+  position:absolute; top:0; left:0; right:0; padding:8px 14px 6px;
+  display:flex; flex-direction:column; gap:4px;
+  background:linear-gradient(180deg,rgba(8,5,2,.97) 0%,rgba(8,5,2,.7) 80%,transparent 100%);
   pointer-events:auto;
 }
+.tb-row1 { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tb-row1-right { display:flex; align-items:center; gap:8px; }
+.tb-row2 { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.tb-cv-btn { background:linear-gradient(135deg,#d4a843,#b88828); border:none; color:#060402;
+  font-size:.68rem; font-weight:bold; padding:3px 10px; border-radius:5px; cursor:pointer;
+  font-family:Georgia,serif; letter-spacing:1px; text-decoration:none; white-space:nowrap; }
+.tb-cv-btn:hover { background:linear-gradient(135deg,#f0c060,#d4a843); }
+.tb-portrait { width:32px; height:32px; border-radius:50%; overflow:hidden;
+  border:2px solid rgba(212,168,67,.6); flex-shrink:0; }
+.tb-portrait img { width:100%; height:100%; object-fit:cover; object-position:center top; }
 .tb-name { font-size:1rem; color:#d4a843; letter-spacing:2px; }
 .tb-era  { background:rgba(212,168,67,.12); border:1px solid rgba(212,168,67,.3); padding:3px 11px; border-radius:10px; font-size:.7rem; color:#b09030; letter-spacing:2px; }
 .tb-res  { display:flex; gap:6px; flex-wrap:wrap; }
@@ -48,7 +63,7 @@ canvas { display:block; }
 .tb-prog { font-size:.78rem; color:#906828; }
 
 #panel {
-  position:absolute; right:16px; top:62px; width:268px;
+  position:absolute; right:16px; top:78px; width:268px;
   display:flex; flex-direction:column; gap:8px;
   pointer-events:auto; max-height:calc(100vh - 160px); overflow-y:auto;
 }
@@ -89,7 +104,7 @@ canvas { display:block; }
 .cs { font-size:.54rem; color:#705020; margin-top:1px; }
 
 #notif {
-  position:absolute; top:68px; left:50%; transform:translateX(-50%);
+  position:absolute; top:82px; left:50%; transform:translateX(-50%);
   background:rgba(8,5,2,.92); border:1px solid rgba(212,168,67,.45);
   padding:6px 18px; border-radius:18px; font-size:.76rem; color:#d4a843;
   pointer-events:none; opacity:0; transition:opacity .35s; white-space:nowrap; z-index:200;
@@ -216,20 +231,20 @@ canvas { display:block; }
 @media (max-width: 600px) {
 
   /* ── Topbar ── */
-  #topbar {
-    padding: 8px 10px;
-    gap: 4px;
-  }
-  .tb-name { font-size: .82rem; letter-spacing: 1px; }
-  .tb-era  { font-size: .6rem; padding: 2px 7px; }
-  .tb-res  { gap: 4px; }
-  .ri      { font-size: .62rem; padding: 2px 7px; }
+  #topbar { padding: 6px 8px 4px; }
+  .tb-row1 { gap: 5px; }
+  .tb-name { font-size: .78rem; letter-spacing: 0px; }
+  .tb-era  { font-size: .58rem; padding: 2px 6px; }
+  .tb-res  { gap: 3px; flex-wrap:nowrap; overflow-x:auto; }
+  .ri      { font-size: .6rem; padding: 2px 6px; flex-shrink:0; }
+  .tb-portrait { width:26px; height:26px; }
+  .tb-cv-btn { font-size:.6rem; padding:2px 7px; }
   .tb-prog { font-size: .68rem; }
 
   /* ── Quest panel — hide on mobile to save space, show as collapsed ── */
   #panel {
     right: 6px;
-    top: 90px;
+    top: 110px;
     width: min(200px, 46vw);
     max-height: calc(100vh - 340px);
     gap: 5px;
@@ -365,10 +380,12 @@ if("ontouchstart" in document)new DragDropTouch();
 
 <div id="loading">
   <div class="ld-title">⚔ FORGE OF CAREER</div>
-  <div class="ld-sub">Interaktive Bewerbung · Lucas Störk</div>
-  <div class="ld-bar"><div class="ld-fill" id="ldf"></div></div>
+  <div class="ld-sub">Lucas Thomas Störk</div>
+  <div class="ld-sub2">Interaktive Bewerbung</div>
+  <div class="ld-bar" id="ld-bar-wrap"><div class="ld-fill" id="ldf"></div></div>
   <div class="ld-tip" id="ldt">Welt wird erschaffen…</div>
   <div class="ld-err" id="lde"></div>
+  <button class="ld-start" id="ld-start" style="display:none" onclick="doReveal()">▶ Spiel starten</button>
 </div>
 
 <canvas id="c"></canvas>
@@ -376,16 +393,26 @@ if("ontouchstart" in document)new DragDropTouch();
 
 <div id="ui">
   <div id="topbar">
-    <div class="tb-name">⚔ Lucas Störk</div>
-    <div class="tb-era">🏰 BRONZEZEIT</div>
-    <div class="tb-res">
-      <div class="ri">🌾 <span id="r-korn">0</span></div>
-      <div class="ri">⚙️ <span id="r-mehl">0</span></div>
-      <div class="ri">🍩 <span id="r-donut">0</span></div>
-      <div class="ri" id="ri-einheit" style="display:none">⚔️ <span id="r-einheit">0</span></div>
-      <div class="ri" id="ri-innovation" style="display:none">✨ <span id="r-innovation">0</span></div>
+    <!-- Zeile 1: Name + CV + Portrait -->
+    <div class="tb-row1">
+      <div class="tb-name">⚔ Lucas Thomas Störk</div>
+      <div class="tb-row1-right">
+        <a href="cv.pdf" download class="tb-cv-btn">📄 CV</a>
+        <div class="tb-portrait"><img src="portrait.png" alt="Lucas" onerror="this.style.display='none'"></div>
+      </div>
     </div>
-    <div class="tb-prog"><span id="qcount">0</span>/3 &nbsp;<span id="bcount" style="color:#4080a0;font-size:.65rem">+<span id="bonuscount">0</span>/2 Bonus</span></div>
+    <!-- Zeile 2: Era + Res + Progress -->
+    <div class="tb-row2">
+      <div class="tb-era">🏰 BRONZEZEIT</div>
+      <div class="tb-res">
+        <div class="ri">🌾 <span id="r-korn">0</span></div>
+        <div class="ri">⚙️ <span id="r-mehl">0</span></div>
+        <div class="ri">🍩 <span id="r-donut">0</span></div>
+        <div class="ri" id="ri-einheit" style="display:none">⚔️ <span id="r-einheit">0</span></div>
+        <div class="ri" id="ri-innovation" style="display:none">✨ <span id="r-innovation">0</span></div>
+      </div>
+      <div class="tb-prog"><span id="qcount">0</span>/3 &nbsp;<span id="bcount" style="color:#4080a0;font-size:.65rem">+<span id="bonuscount">0</span>/2 Bonus</span></div>
+    </div>
   </div>
 
   <div id="panel">
@@ -488,10 +515,7 @@ if("ontouchstart" in document)new DragDropTouch();
     <button class="dbtn" id="dbtn">Weiter ⟶</button>
   </div>
 
-  <div id="help">
-    <span id="help-desktop"><span class="hk">Drag</span> Karte neben den Weg 🛤️ &nbsp;<span class="hk">Klick</span> Gebäude öffnen<br><span class="hk">Scroll</span> Zoom &nbsp;<span class="hk">Rechtsklick+Drag</span> Drehen</span>
-    <span id="help-mobile" style="display:none"><span class="hk">Halten &amp; Ziehen</span> Karte auf Feld 🛤️ &nbsp;<span class="hk">Tippen</span> Gebäude öffnen<br><span class="hk">2 Finger</span> Zoom &amp; Drehen &nbsp;<span class="hk">1 Finger</span> Ansicht verschieben</span>
-  </div>
+  <!-- controls moved to quest panel -->
 </div>
 
 <div id="completion">
@@ -500,7 +524,7 @@ if("ontouchstart" in document)new DragDropTouch();
     <div class="ct">QUEST COMPLETE!</div>
     <div class="cq">„Merge-Request erfolgreich gestellt."</div>
     <div class="cbody">Das Königreich steht. Das Team ist aufgestellt. Die Vision ist klar.<br><br>Bereit für den nächsten großen Schritt?</div>
-    <button class="cvb">⬇ CV herunterladen</button>
+    <a href="cv.pdf" download class="cvb" style="text-decoration:none;display:inline-block">⬇ CV herunterladen</a>
     <button class="clb" onclick="document.getElementById('completion').classList.remove('show')">Weiter erkunden</button>
   </div>
 </div>
@@ -513,10 +537,6 @@ if("ontouchstart" in document)new DragDropTouch();
 // ── Mobile detection ──
 const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 if(isMobile){
-  const hm=document.getElementById('help-mobile');
-  const hd=document.getElementById('help-desktop');
-  if(hm) hm.style.display='inline';
-  if(hd) hd.style.display='none';
   const cphM=document.getElementById('cph-mobile');
   const cphD=document.getElementById('cph-desktop');
   if(cphM) cphM.style.display='inline';
@@ -679,7 +699,11 @@ ctrl.mouseButtons={LEFT:null,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};
 ctrl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
 ctrl.enableDamping=true; ctrl.dampingFactor=0.08;
 ctrl.minZoom=0.3; ctrl.maxZoom=4;
-ctrl.maxPolarAngle=Math.PI/2.3; ctrl.minPolarAngle=Math.PI/7;
+ctrl.maxPolarAngle=Math.PI/3.2; ctrl.minPolarAngle=Math.PI/5;
+ctrl.enableRotate=true;
+// Lock polar angle so only azimuth (left/right) rotation is possible
+ctrl.minPolarAngle=Math.PI/4.2;
+ctrl.maxPolarAngle=Math.PI/4.2;
 
 // ── Lights ────────────────────────────────────────────────────────────────────
 const ambLight=new THREE.AmbientLight(0xd0c8b0,1.2); scene.add(ambLight);
@@ -1085,13 +1109,18 @@ function buildCardPreviews(){
 }
 function reveal(){
   document.getElementById('ldf').style.width='100%';
-  document.getElementById('ldt').textContent='✓ Bereit!';
+  document.getElementById('ldt').textContent='✓ Welt bereit!';
   setTimeout(()=>{
-    document.getElementById('loading').classList.add('out');
-    setTimeout(()=>document.getElementById('loading').style.display='none',1300);
-    updateCardStates();
-    notify('Willkommen! Karten neben den Weg ziehen 🛤️');
-  },400);
+    document.getElementById('ld-bar-wrap').style.display='none';
+    document.getElementById('ldt').style.display='none';
+    document.getElementById('ld-start').style.display='inline-block';
+  },600);
+}
+window.doReveal=function(){
+  document.getElementById('loading').classList.add('out');
+  setTimeout(()=>document.getElementById('loading').style.display='none',1300);
+  updateCardStates();
+  notify('Willkommen! Karten neben den Weg ziehen 🛤️');
 }
 
 // ── Characters ────────────────────────────────────────────────────────────────
@@ -1922,7 +1951,7 @@ const TARGET_LIMIT = 22;
 
   // Moon: opposite side
   moon.position.set(-sun.position.x, -sun.position.y+20, -30);
-  moon.intensity = nightBlend * 0.6;
+  moon.intensity = nightBlend * 1.4;
   moonDisc.position.set(moon.position.x*0.72, moon.position.y*0.72, moon.position.z*0.72);
   moonDisc.material.opacity = nightBlend * Math.max(0, moon.position.y/80);
   moonDisc.visible = moon.position.y > -5;
