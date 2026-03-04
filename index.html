@@ -826,19 +826,27 @@ function easeOutBack(t){
 // GLB loader with per-asset timeout so missing files never block
 const glbl = new GLTFLoader();
 const cache = {};
-const loadOne = (name) => new Promise(resolve => {
-  if (cache[name] !== undefined) { resolve(cache[name]); return; }
+const loadOne = (name, attempt=0) => new Promise(resolve => {
+  // Return cached result - but if null (failed), retry up to 2 times
+  if (cache[name] !== undefined && cache[name] !== null) { resolve(cache[name]); return; }
   let settled = false;
+  const TIMEOUT = attempt === 0 ? 15000 : 20000;
   const timer = setTimeout(() => {
-    if (!settled) { settled = true; cache[name] = null; resolve(null); }
-  }, 4000);
+    if (!settled) {
+      settled = true;
+      if (attempt < 2) { delete cache[name]; loadOne(name, attempt+1).then(resolve); }
+      else { cache[name] = null; resolve(null); }
+    }
+  }, TIMEOUT);
   const encodedName = name.split('/').map(encodeURIComponent).join('/');
   glbl.load(BASE + encodedName, gltf => {
     if (settled) return; settled = true; clearTimeout(timer);
     gltf.scene.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
     cache[name] = gltf; resolve(gltf);
   }, undefined, () => {
-    if (settled) return; settled = true; clearTimeout(timer); cache[name] = null; resolve(null);
+    if (settled) return; settled = true; clearTimeout(timer);
+    if (attempt < 2) { delete cache[name]; loadOne(name, attempt+1).then(resolve); }
+    else { cache[name] = null; resolve(null); }
   });
 });
 
@@ -934,6 +942,9 @@ Promise.all(essentialNames.map(name=>
   buildCardPreviews();
   spawnChars();
   reveal();
+  // Re-run card previews after delay in case mobile loaded assets late
+  setTimeout(()=>buildCardPreviews(), 1500);
+  setTimeout(()=>{ buildCardPreviews(); spawnChars(); }, 4000);
   // Non-blocking deco load after reveal
   decoNames.forEach(name=>loadOne(name).then(g=>{
     if(!g) return;
@@ -1836,6 +1847,7 @@ canvas.addEventListener('touchend',e=>{
     ctrl.enabled=false;
     const g=cache[dragDef.asset];
     if(g){const m=g.scene.clone();m.scale.setScalar(dragDef.scale||1.0);m.rotation.y=dragDef.rotY||0;createGhost(m);}
+    else{ delete cache[dragDef.asset]; loadOne(dragDef.asset).then(gr=>{ if(gr){ renderCardPreview(gr,document.getElementById('cc'+drag),dragDef.rotY,dragDef.scale); } }); }
     if(e.touches.length>0){_lastTX=e.touches[0].clientX;_lastTY=e.touches[0].clientY;}
     const onEnd=()=>{el.classList.remove('dragging');el.removeEventListener('touchend',onEnd);};
     el.addEventListener('touchend',onEnd,{once:true});
