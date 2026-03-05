@@ -83,7 +83,10 @@ canvas { display:block; }
 /* WebKit-Scrollbalken im Panel ausblenden */
 #panel::-webkit-scrollbar,
 #panel::-webkit-scrollbar-track,
-#panel::-webkit-scrollbar-thumb {
+#panel::-webkit-scrollbar-thumb,
+#tray::-webkit-scrollbar,
+#tray::-webkit-scrollbar-track,
+#tray::-webkit-scrollbar-thumb {
   display: none;
 }
 
@@ -292,6 +295,7 @@ canvas { display:block; }
   .qc-prog  { font-size: .6rem; }
 
   /* ── Card tray — smaller cards, horizontal scroll ── */
+  body { overflow: hidden; }
   #tray {
     padding: 8px 8px 12px;
     gap: 6px;
@@ -299,12 +303,13 @@ canvas { display:block; }
     overflow-x: auto;
     justify-content: flex-start;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
   .card {
     width: 72px;
     flex-shrink: 0;
     padding: 4px 5px 6px;
-    touch-action: none;
+    touch-action: pan-x;
   }
   .card-canvas { width: 62px; height: 50px; }
   .cn { font-size: .58rem; }
@@ -319,7 +324,12 @@ canvas { display:block; }
     max-width: 400px;
     padding: 12px 12px;
     max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     box-sizing: border-box;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .bm-desc  { font-size: .68rem; }
   .bm-slots { gap: 6px; }
@@ -581,8 +591,6 @@ if(isMobile){
 // Durch Stop der Propagation in bmenu / panel bleibt natives Scrollen möglich;
 // unsere Listener sind passiv, also kann der Browser frei scrollen.
 if ('ontouchstart' in window) {
-  // Use capture phase + stopImmediatePropagation so DragDropTouch
-  // (registered on document bubble) never sees touches inside these panels.
   const absorbTouch = e => e.stopImmediatePropagation();
   ['bmenu', 'panel'].forEach(id => {
     const el = document.getElementById(id);
