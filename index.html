@@ -62,15 +62,30 @@ canvas { display:block; }
 .ri { background:rgba(212,168,67,.1); border:1px solid rgba(212,168,67,.22); padding:3px 10px; border-radius:8px; font-size:.72rem; color:#d4a843; }
 .tb-prog { font-size:.78rem; color:#906828; }
 
+/* Quest-Panel rechts (voll scrollbar, Balken versteckt) */
 #panel {
-  position:absolute; right:16px; top:78px; width:268px;
-  display:flex; flex-direction:column; gap:8px;
-  pointer-events:auto; max-height:calc(100vh - 160px); overflow-y:auto;
-  touch-action:pan-y; -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
+  position: absolute;
+  right: 16px;
+  top: 78px;
+  width: 268px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none; /* Firefox: Scrollbar ausblenden */
 }
-#panel::-webkit-scrollbar{width:3px}
-#panel::-webkit-scrollbar-thumb{background:#d4a84328}
+
+/* WebKit-Scrollbalken im Panel ausblenden */
+#panel::-webkit-scrollbar,
+#panel::-webkit-scrollbar-track,
+#panel::-webkit-scrollbar-thumb {
+  display: none;
+}
 
 .qcard {
   background:rgba(8,5,2,.88); border:1px solid rgba(212,168,67,.18);
@@ -556,14 +571,18 @@ if(isMobile){
 }
 
 // ── Mobile: bmenu touch-scroll fix ──────────────────────────────────────
-// DragDropTouch registers passive:false touchmove on document.
-// Stopping propagation from #bmenu prevents that handler from blocking
-// native scroll; our listeners are passive so the browser scrolls freely.
+// Mobile bmenu + panel touch-scroll fix
+// DragDropTouch registriert passive:false touchmove auf document.
+// Durch Stop der Propagation in bmenu / panel bleibt natives Scrollen möglich;
+// unsere Listener sind passiv, also kann der Browser frei scrollen.
 if ('ontouchstart' in window) {
-  const _bm = document.getElementById('bmenu');
-  const _stopProp = e => e.stopPropagation();
-  _bm.addEventListener('touchstart', _stopProp, { passive: true });
-  _bm.addEventListener('touchmove',  _stopProp, { passive: true });
+  const stopProp = e => e.stopPropagation();
+  ['bmenu', 'panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', stopProp, { passive: true });
+    el.addEventListener('touchmove',  stopProp, { passive: true });
+  });
 }
 // ────────────────────────────────────────────────────────────────────────
 
