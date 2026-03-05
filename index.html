@@ -60,6 +60,23 @@ canvas { display:block; }
 .tb-era  { background:rgba(212,168,67,.12); border:1px solid rgba(212,168,67,.3); padding:3px 11px; border-radius:10px; font-size:.7rem; color:#b09030; letter-spacing:2px; }
 .tb-res  { display:flex; gap:6px; flex-wrap:wrap; }
 .ri { background:rgba(212,168,67,.1); border:1px solid rgba(212,168,67,.22); padding:3px 10px; border-radius:8px; font-size:.72rem; color:#d4a843; }
+@keyframes tilePop {
+  0%   { transform:translate(-50%,-50%) scale(0.2); opacity:1; }
+  70%  { transform:translate(-50%,-50%) scale(1.7); opacity:.6; }
+  100% { transform:translate(-50%,-50%) scale(2.4); opacity:0; }
+}
+.tile-pop {
+  position:fixed; pointer-events:none; z-index:500;
+  border-radius:50%; border:2px solid #d4a843;
+  box-shadow:0 0 20px rgba(212,168,67,.65);
+  animation:tilePop .55s ease forwards;
+}
+@keyframes resGain {
+  0%   { transform:scale(1);    color:#d4a843; }
+  45%  { transform:scale(1.4);  color:#ffe080; text-shadow:0 0 8px rgba(255,220,80,.8); }
+  100% { transform:scale(1);    color:#d4a843; }
+}
+.ri.gain { animation:resGain .45s ease; }
 .tb-prog { font-size:.78rem; color:#906828; }
 
 /* Quest-Panel rechts (voll scrollbar, Balken versteckt) */
@@ -104,7 +121,9 @@ canvas { display:block; }
 .qcard.done:hover { opacity:.75; }
 .qcard.done.expanded .qc-desc, .qcard.done.expanded .qc-hint, .qcard.done.expanded .qc-prog { display:block; }
 .qcard.active { border-left-color:#d4a843; }
-.qcard.locked { border-left-color:#2a2a2a; opacity:.4; }
+.qcard.locked { border-left-color:#2a2a2a; opacity:.35; filter:blur(0.4px); }
+.qcard.locked .qc-title::before { content:'🔒 '; font-size:.75em; }
+.qcard.done   .qc-title::before { content:'✅ '; font-size:.75em; }
 .qc-step  { font-size:.58rem; color:#705020; letter-spacing:2px; text-transform:uppercase; margin-bottom:3px; }
 .qc-title { font-size:.9rem; color:#d4a843; margin-bottom:4px; }
 .qc-desc  { font-size:.7rem; color:#806040; line-height:1.5; }
@@ -158,8 +177,8 @@ canvas { display:block; }
 #bmenu::-webkit-scrollbar,
 #bmenu::-webkit-scrollbar-track,
 #bmenu::-webkit-scrollbar-thumb { display: none; }
-#bmenu.show { display:block; animation:su .28s ease; }
-@keyframes su { from{opacity:0;transform:translateX(-50%) translateY(14px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+#bmenu.show { display:block; animation:su .38s cubic-bezier(0.34,1.4,0.64,1); }
+@keyframes su { from{opacity:0;transform:translateX(-50%) translateY(24px) scale(0.96)} to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} }
 .bm-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:11px; }
 .bm-ttl { font-size:1rem; color:#d4a843; }
 .bm-x   { background:none; border:none; color:#604820; font-size:1.2rem; cursor:pointer; padding:2px 6px; }
@@ -222,7 +241,7 @@ canvas { display:block; }
 .cbody { font-size:.78rem; color:#705030; line-height:1.7; margin-bottom:20px; }
 .cvb { background:linear-gradient(135deg,#d4a843,#b88828); border:none; color:#060402; font-weight:bold; padding:10px 26px; border-radius:7px; cursor:pointer; font-family:'Georgia',serif; font-size:.82rem; letter-spacing:2px; margin-right:0; transition:all .2s; -webkit-user-drag:none; user-select:none; }
 .cvb:hover { transform:translateY(-2px); }
-.clb { background:transparent; border:1px solid rgba(212,168,67,.32); color:#705030; padding:10px 16px; border-radius:7px; cursor:pointer; font-family:'Georgia',serif; font-size:.78rem; display:block; margin-top:10px; }
+.clb { background:transparent; border:1px solid rgba(212,168,67,.32); color:#705030; padding:10px 16px; border-radius:7px; cursor:pointer; font-family:'Georgia',serif; font-size:.78rem; display:block; margin:10px auto 0; }
 .clb:hover { border-color:rgba(212,168,67,.7); color:#a08040; }
 
 #story-toast {
@@ -441,7 +460,7 @@ if("ontouchstart" in document)new DragDropTouch();
       <div class="tb-name">⚔ Lucas Thomas Störk</div>
       <div class="tb-row1-right">
         <a href="cv.pdf" download class="tb-cv-btn">📄 CV</a>
-        <div class="tb-portrait"><img src="portrait.png" alt="Lucas" onerror="this.style.display='none'"></div>
+        <div class="tb-portrait"><img src="portrait.png" alt="Lucas" draggable="false" style="-webkit-user-drag:none;user-select:none;pointer-events:none" onerror="this.style.display='none'"></div>
       </div>
     </div>
     <!-- Zeile 2: Era + Res + Progress -->
@@ -615,9 +634,15 @@ const OX=-(GRID_C*TILE)/2, OZ=-(GRID_R*TILE)/2;
 const RES = {korn:0, mehl:0, donut:0, einheit:0, innovation:0};
 function addRes(k,n){
   RES[k]+=n;
-  document.getElementById('r-'+k).textContent=RES[k];
+  const el=document.getElementById('r-'+k);
+  const start=RES[k]-n, end=RES[k], s0=performance.now(), dur=420;
+  (function tick(){
+    const p=Math.min(1,(performance.now()-s0)/dur);
+    el.textContent=Math.round(start+p*(end-start));
+    if(p<1)requestAnimationFrame(tick);
+  })();
   const ri=document.getElementById('ri-'+k);
-  if(ri) ri.style.display='';
+  if(ri){ ri.style.display=''; ri.classList.remove('gain'); void ri.offsetWidth; ri.classList.add('gain'); }
 }
 function subRes(k,n){
   RES[k]-=n;
@@ -750,12 +775,13 @@ scene.fog=new THREE.FogExp2(0x8ab4d8,0.011);
 
 const FS=28, AR=innerWidth/innerHeight;
 const cam=new THREE.OrthographicCamera(-FS*AR/2,FS*AR/2,FS/2,-FS/2,0.1,300);
-cam.position.set(30,30,30); cam.lookAt(0,0,0);
+cam.position.set(0,140,110); cam.lookAt(0,0,0);
 
 const ctrl=new OrbitControls(cam,renderer.domElement);
 ctrl.enableRotate=true;
 ctrl.mouseButtons={LEFT:null,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};
 ctrl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
+ctrl.enabled=false;
 ctrl.enableDamping=true; ctrl.dampingFactor=0.08;
 ctrl.minZoom=0.3; ctrl.maxZoom=4;
 ctrl.maxPolarAngle=Math.PI/3.2; ctrl.minPolarAngle=Math.PI/5;
@@ -1484,10 +1510,22 @@ function updateCardStates(){
   });
 }
 
+function tilePopFX(tile){
+  const v=tile.position.clone().project(cam);
+  const x=(v.x*.5+.5)*innerWidth, y=(-v.y*.5+.5)*innerHeight;
+  [50,72,95].forEach((sz,i)=>{
+    const d=document.createElement('div');
+    d.className='tile-pop';
+    d.style.cssText=`left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;animation-delay:${i*.07}s;opacity:${1-i*.2}`;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),700+i*70);
+  });
+}
 function dropBuilding(qi,tile){
   cancelTut();
   const def=DEFS[qi];
   tile.userData.occ=true; tile.userData.qi=qi;
+  tilePopFX(tile);
   placed[qi]=true; bldgTiles[qi]=tile;
   document.getElementById('card'+qi).classList.add('placed');
   document.getElementById('card'+qi).removeAttribute('draggable');
@@ -2103,11 +2141,21 @@ const DAY_DURATION = 120.0;
 const _fogDay=new THREE.Color(0x8ab4d8),_fogNight=new THREE.Color(0x050d1a);
 const _hemiDay=new THREE.Color(0x7ab0d0),_hemiNight=new THREE.Color(0x1a2a4a);
 const TARGET_LIMIT = 22;
+const _introStart=performance.now(), _introDur=2600;
+const _camFrom=new THREE.Vector3(0,140,110), _camTo=new THREE.Vector3(30,30,30);
+let _introActive=true;
 (function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clk.getDelta(), 0.1); // clamp: avoid huge jumps on tab-switch
   charTime += dt;
   const t = charTime;
+  if(_introActive){
+    const p=Math.min(1,(performance.now()-_introStart)/_introDur);
+    const e=1-Math.pow(1-p,3); // easeOutCubic
+    cam.position.lerpVectors(_camFrom,_camTo,e);
+    cam.lookAt(0,0,0);
+    if(p>=1){_introActive=false;ctrl.enabled=true;ctrl.target.set(0,0,0);ctrl.update();}
+  }
   ctrl.update();
   // Clamp camera pan to grid area
   ctrl.target.x=Math.max(-TARGET_LIMIT,Math.min(TARGET_LIMIT,ctrl.target.x));
