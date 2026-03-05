@@ -297,6 +297,9 @@ canvas { display:block; }
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .bm-desc  { font-size: .68rem; }
   .bm-slots { gap: 6px; }
@@ -316,7 +319,7 @@ canvas { display:block; }
 
   /* ── Notification ── */
   #notif {
-    top: 52px;
+    top: 90px;
     font-size: .68rem;
     padding: 5px 14px;
     max-width: 90vw;
@@ -551,6 +554,18 @@ if(isMobile){
   if(cphM) cphM.style.display='inline';
   if(cphD) cphD.style.display='none';
 }
+
+// ── Mobile: bmenu touch-scroll fix ──────────────────────────────────────
+// DragDropTouch registers passive:false touchmove on document.
+// Stopping propagation from #bmenu prevents that handler from blocking
+// native scroll; our listeners are passive so the browser scrolls freely.
+if ('ontouchstart' in window) {
+  const _bm = document.getElementById('bmenu');
+  const _stopProp = e => e.stopPropagation();
+  _bm.addEventListener('touchstart', _stopProp, { passive: true });
+  _bm.addEventListener('touchmove',  _stopProp, { passive: true });
+}
+// ────────────────────────────────────────────────────────────────────────
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
