@@ -38,6 +38,8 @@ body { background:#1a2510; font-family:'Georgia',serif; overflow:hidden; color:#
 .ld-err   { margin-top:.6rem; color:#c05030; font-size:.65rem; max-width:380px; text-align:center; min-height:1rem; }
 
 canvas { display:block; }
+#c { opacity:0; transition:opacity 0.9s ease; }
+#ui { opacity:0; transition:opacity 0.65s ease; }
 #ui { position:fixed; inset:0; pointer-events:none; z-index:100; }
 
 #topbar {
@@ -459,7 +461,7 @@ if("ontouchstart" in document)new DragDropTouch();
     <div class="tb-row1">
       <div class="tb-name">⚔ Lucas Thomas Störk</div>
       <div class="tb-row1-right">
-        <a href="cv.pdf" download class="tb-cv-btn">📄 CV</a>
+        <a href="cv.pdf" download class="tb-cv-btn" draggable="false" style="-webkit-user-drag:none;user-select:none">📄 CV</a>
         <div class="tb-portrait"><img src="portrait.png" alt="Lucas" draggable="false" style="-webkit-user-drag:none;user-select:none;pointer-events:none" onerror="this.style.display='none'"></div>
       </div>
     </div>
@@ -775,7 +777,7 @@ scene.fog=new THREE.FogExp2(0x8ab4d8,0.011);
 
 const FS=28, AR=innerWidth/innerHeight;
 const cam=new THREE.OrthographicCamera(-FS*AR/2,FS*AR/2,FS/2,-FS/2,0.1,300);
-cam.position.set(0,140,110); cam.lookAt(0,0,0);
+cam.position.set(30,30,30); cam.lookAt(0,0,0);
 
 const ctrl=new OrbitControls(cam,renderer.domElement);
 ctrl.enableRotate=true;
@@ -1243,11 +1245,26 @@ function reveal(){
   // This function is kept as a no-op to avoid reference errors
 }
 window.doReveal=function(){
+  if(_introActive) return; // guard against double-trigger
+  // Fade out loading overlay
   document.getElementById('loading').classList.add('out');
-  setTimeout(()=>document.getElementById('loading').style.display='none',1300);
+  setTimeout(()=>document.getElementById('loading').style.display='none',1400);
+  // Fade canvas in — hides the instantaneous snap to high altitude
+  setTimeout(()=>document.getElementById('c').style.opacity='1', 80);
   updateCardStates();
-  notify('Willkommen! Karten neben den Weg ziehen 🛤️');
   scheduleTut();
+  // Snap camera to aerial position, disable controls during flight
+  cam.position.copy(_camFrom);
+  cam.lookAt(0,0,0);
+  ctrl.target.set(0,0,0);
+  ctrl.enabled=false;
+  _introActive=true;
+  // _introDelay: aerial hold phase — descent starts after this offset
+  _introStart=performance.now()+_introDelay;
+  // Notify + tut trigger once camera has landed
+  setTimeout(()=>{
+    notify('Willkommen! Karten neben den Weg ziehen 🛤️');
+  }, _introDelay+_introDur+300);
 }
 
 // ── Characters ────────────────────────────────────────────────────────────────
@@ -1390,6 +1407,7 @@ const prod={};
 DEFS.forEach(d=>{prod[d.qi]={};});
 const done_q=[false,false,false,false,false];
 const placed=[false,false,false,false,false];
+const underConstr=[false,false,false,false,false];
 const bldgTiles=[null,null,null,null,null];
 const bldgObjs=[null,null,null,null,null];
 let qcount=0;
@@ -1526,6 +1544,7 @@ function dropBuilding(qi,tile){
   const def=DEFS[qi];
   tile.userData.occ=true; tile.userData.qi=qi;
   tilePopFX(tile);
+  underConstr[qi]=true;
   placed[qi]=true; bldgTiles[qi]=tile;
   document.getElementById('card'+qi).classList.add('placed');
   document.getElementById('card'+qi).removeAttribute('draggable');
@@ -1549,6 +1568,7 @@ function dropBuilding(qi,tile){
       scene.remove(scaffold);
       // Guarantee asset is loaded before building
       loadOne(def.asset).then(()=>{
+        underConstr[qi]=false;
         spawnBuildingWithRise(qi,tile,def);
         showIdleRing(qi,tile.position);
         notify(def.name+' fertig gebaut! ✨ Klick zum Produzieren.');
@@ -1734,7 +1754,7 @@ function renderSlots() {
     div.className = 'slot';
     let inner = '';
     if (!st) {
-      const ok = Object.entries(rec.cost).every(([k,n]) => RES[k] >= n);
+      const ok = Object.entries(rec.cost).every(([k,n]) => RES[k] >= n) && !underConstr[qi];
       div.classList.add(ok ? 'avail' : 'locked-s');
       inner = `<div class="si">${rec.icon}</div>
                <div class="sn">${rec.name}</div>
@@ -1789,6 +1809,7 @@ function renderSlots() {
 }
 
 function startProd(qi, id) {
+  if(underConstr[qi]){ notify('⏳ Gebäude noch im Bau!'); return; }
   const rec = DEFS[qi].recipes.find(r => r.id === id);
   for (const [k,n] of Object.entries(rec.cost)) { if (RES[k] < n) { notify('Ressourcen fehlen!'); return; } }
   for (const [k,n] of Object.entries(rec.cost)) subRes(k, n);
@@ -1963,6 +1984,8 @@ canvas.addEventListener('click', e => {
         });
         return;
       }
+      const _rdy1=Object.entries(prod[qi]).filter(([,s])=>s.ready);
+      if(_rdy1.length===1){ harvestProd(qi,_rdy1[0][0]); return; }
       openBM(qi);
       return;
     }
@@ -1993,7 +2016,7 @@ let nT;
 function notify(m) {
   const el = document.getElementById('notif');
   el.textContent = m; el.classList.add('show');
-  clearTimeout(nT); nT = setTimeout(() => el.classList.remove('show'), 3200);
+  clearTimeout(nT); nT = setTimeout(() => el.classList.remove('show'), 4700);
 }
 
 // ── Tutorial hint animation ───────────────────────────────────────────────
@@ -2141,22 +2164,43 @@ const DAY_DURATION = 120.0;
 const _fogDay=new THREE.Color(0x8ab4d8),_fogNight=new THREE.Color(0x050d1a);
 const _hemiDay=new THREE.Color(0x7ab0d0),_hemiNight=new THREE.Color(0x1a2a4a);
 const TARGET_LIMIT = 22;
-const _introStart=performance.now(), _introDur=2600;
+const _introDur=3000;         // total flight duration ms
+const _introDelay=400;        // ms aerial hold before descent
 const _camFrom=new THREE.Vector3(0,140,110), _camTo=new THREE.Vector3(30,30,30);
-let _introActive=true;
+let _introActive=false;
+let _introStart=0;            // set to performance.now()+_introDelay in doReveal
 (function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clk.getDelta(), 0.1); // clamp: avoid huge jumps on tab-switch
   charTime += dt;
   const t = charTime;
   if(_introActive){
-    const p=Math.min(1,(performance.now()-_introStart)/_introDur);
-    const e=1-Math.pow(1-p,3); // easeOutCubic
-    cam.position.lerpVectors(_camFrom,_camTo,e);
-    cam.lookAt(0,0,0);
-    if(p>=1){_introActive=false;ctrl.enabled=true;ctrl.target.set(0,0,0);ctrl.update();}
+    const rawP=(performance.now()-_introStart)/_introDur;
+    if(rawP<0){
+      // aerial hold phase: camera steady at top, fog minimal for clear overview
+      scene.fog.density=0.002;
+    } else {
+      const p=Math.min(1,rawP);
+      // easeInOutCubic: slow start + slow land (no jarring snap)
+      const e=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+      cam.position.lerpVectors(_camFrom,_camTo,e);
+      cam.lookAt(0,0,0);
+      // fog density fades in as camera descends (aerial=clear, ground=normal)
+      scene.fog.density=0.002+p*(0.011-0.002);
+      if(p>=1){
+        scene.fog.density=0.011;
+        _introActive=false;
+        ctrl.enabled=true;
+        ctrl.target.set(0,0,0);
+        // snap OrbitControls internal state to current cam — prevents damping bounce
+        ctrl.enableDamping=false; ctrl.update(); ctrl.enableDamping=true;
+        // fade in UI now that camera has landed
+        document.getElementById('ui').style.opacity='1';
+      }
+    }
+  } else {
+    ctrl.update();
   }
-  ctrl.update();
   // Clamp camera pan to grid area
   ctrl.target.x=Math.max(-TARGET_LIMIT,Math.min(TARGET_LIMIT,ctrl.target.x));
   ctrl.target.z=Math.max(-TARGET_LIMIT,Math.min(TARGET_LIMIT,ctrl.target.z));
@@ -2296,7 +2340,11 @@ canvas.addEventListener('touchend',e=>{
     let o=h.object;
     while(o&&o!==scene){
       const qi=bldgObjs.indexOf(o);
-      if(qi>=0){openBM(qi);return;}
+      if(qi>=0){
+        const _rdy2=Object.entries(prod[qi]).filter(([,s])=>s.ready);
+        if(_rdy2.length===1){ harvestProd(qi,_rdy2[0][0]); return; }
+        openBM(qi);return;
+      }
       o=o.parent;
     }
   }
